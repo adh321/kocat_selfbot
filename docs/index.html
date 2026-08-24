@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>코캣 셀프봇</title>
+  <style>
+    :root {
+      --bg: #0e0e14;
+      --surface: #16161f;
+      --surface2: #1e1e2e;
+      --accent: #7c6af5;
+      --accent2: #a78bfa;
+      --text: #e2e2f0;
+      --muted: #888899;
+      --border: #2a2a3d;
+      --danger: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── 사이드바 ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0;
+      width: 220px; height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 24px 0; z-index: 100;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .cat { font-size: 28px; }
+    .sidebar-logo span { font-size: 15px; font-weight: 700; color: var(--accent2); }
+    .nav { margin-top: 16px; flex: 1; }
+    .nav-section {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      letter-spacing: 1px; text-transform: uppercase;
+      padding: 12px 20px 6px;
+    }
+    .nav a {
+      display: block; padding: 9px 20px;
+      color: var(--muted); text-decoration: none; font-size: 14px;
+      border-left: 3px solid transparent; transition: all 0.15s;
+    }
+    .nav a:hover, .nav a.active {
+      color: var(--text); background: var(--surface2);
+      border-left-color: var(--accent);
+    }
+
+    /* ── 메인 ── */
+    .main { margin-left: 220px; padding: 48px 56px; max-width: 960px; }
+    .section { display: none; }
+    .section.active { display: block; }
+    h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; color: #fff; }
+    .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+    h2 {
+      font-size: 18px; font-weight: 700;
+      margin: 36px 0 14px; color: var(--accent2);
+      padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+    p { line-height: 1.75; color: #c8c8da; margin-bottom: 12px; font-size: 14px; }
+
+    /* ── 명령어 카드 ── */
+    .cmd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px; margin-bottom: 8px;
+    }
+    .cmd-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px; transition: border-color 0.15s;
+    }
+    .cmd-card:hover { border-color: var(--accent); }
+    .cmd-name {
+      font-family: 'Consolas', monospace; font-size: 13px;
+      color: var(--accent2); font-weight: 700; margin-bottom: 4px;
+    }
+    .cmd-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* ── 뱃지 ── */
+    .badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 20px; margin-left: 6px; vertical-align: middle;
+    }
+    .badge-owner { background: #3b2fa0; color: #a78bfa; }
+    .badge-approved { background: #1a3a2a; color: #4ade80; }
+
+    /* ── 히어로 ── */
+    .hero {
+      background: linear-gradient(135deg, #1a1730 0%, #0e0e14 100%);
+      border: 1px solid var(--border); border-radius: 16px;
+      padding: 40px 36px; margin-bottom: 32px;
+      display: flex; align-items: center; gap: 24px;
+    }
+    .hero-icon { font-size: 52px; }
+    .hero-title { font-size: 26px; font-weight: 800; color: #fff; }
+    .hero-sub { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+    /* ── 이용약관 ── */
+    .tos-box {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px 32px;
+    }
+    .tos-box ol { padding-left: 20px; }
+    .tos-box li { color: #c8c8da; font-size: 14px; line-height: 1.85; margin-bottom: 8px; }
+    .tos-box .warn { color: var(--danger); font-weight: 600; }
+    .tos-updated { margin-top: 24px; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <span>코캣 셀프봇</span>
+  </div>
+  <div class="nav">
+    <div class="nav-section">메뉴</div>
+    <a href="#" class="active" onclick="show('home',this);return false;">🏠 홈</a>
+    <a href="#" onclick="show('commands',this);return false;">📋 명령어</a>
+    <a href="#" onclick="show('gpt',this);return false;">🤖 GPT 기능</a>
+    <a href="#" onclick="show('fishing',this);return false;">🎣 낚시 시스템</a>
+    <div class="nav-section">정보</div>
+    <a href="#" onclick="show('tos',this);return false;">📜 이용약관</a>
+    <a href="#" onclick="show('discord',this);return false;">💬 디스코드</a>
+  </div>
+</nav>
+
+<main class="main">
+
+  <!-- 홈 -->
+  <div id="home" class="section active">
+    <div class="hero">
+      <div class="hero-title">코캣 셀프봇</div>
+      <div class="hero-sub">Discord 셀프봇 · GPT · 낚시 · 도배 · 멘헤라 모드</div>
+    </div>
+    <h2>소개</h2>
+    <p>코캣 셀프봇은 Discord 계정에서 직접 동작하는 셀프봇입니다. GPT 대화, 낚시 미니게임, 도배, 멘헤라 모드 등 다양한 기능을 제공합니다.</p>
+    <p>모든 명령어는 <code style="background:#1e1e2e;padding:1px 5px;border-radius:4px;color:#a78bfa">!</code> 접두사로 시작합니다.</p>
+    <h2>빠른 시작</h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!핑</div><div class="cmd-desc">봇 응답 속도 확인</div></div>
+      <div class="cmd-card"><div class="cmd-name">!명령어</div><div class="cmd-desc">전체 명령어 목록 출력</div></div>
+      <div class="cmd-card"><div class="cmd-name">!gpt 안녕</div><div class="cmd-desc">AI 대화 시작</div></div>
+      <div class="cmd-card"><div class="cmd-name">!낚시</div><div class="cmd-desc">낚시 미니게임 시작</div></div>
+    </div>
+  </div>
+
+  <!-- 명령어 -->
+  <div id="commands" class="section">
+    <h1>명령어 목록</h1>
+    <p class="subtitle">
+      <span class="badge badge-owner">소유자</span> 봇 소유자 전용
+      &nbsp;<span class="badge badge-approved">승인</span> 승인된 유저 사용 가능
+    </p>
+    <h2>기본</h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!핑</div><div class="cmd-desc">응답속도(ms) 확인</div></div>
+      <div class="cmd-card"><div class="cmd-name">!명령어</div><div class="cmd-desc">전체 명령어 목록</div></div>
+      <div class="cmd-card"><div class="cmd-name">!도움말</div><div class="cmd-desc">도움말 출력</div></div>
+      <div class="cmd-card"><div class="cmd-name">!서버정보</div><div class="cmd-desc">현재 서버 정보</div></div>
+      <div class="cmd-card"><div class="cmd-name">!유저정보</div><div class="cmd-desc">유저 정보 확인</div></div>
+      <div class="cmd-card"><div class="cmd-name">!닉변 &lt;닉네임&gt;</div><div class="cmd-desc">닉네임 변경</div></div>
+      <div class="cmd-card"><div class="cmd-name">!상태 &lt;텍스트&gt;</div><div class="cmd-desc">상태 메시지 변경</div></div>
+      <div class="cmd-card"><div class="cmd-name">!업데이트</div><div class="cmd-desc">봇 재시작</div></div>
+      <div class="cmd-card"><div class="cmd-name">!사용설명서</div><div class="cmd-desc">이 페이지를 열어줌</div></div>
+    </div>
+    <h2>도배</h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!도배시작 &lt;문구&gt;</div><div class="cmd-desc">채널에 문구 반복 도배</div></div>
+      <div class="cmd-card"><div class="cmd-name">!공백도배</div><div class="cmd-desc">보이지 않는 문자 도배</div></div>
+      <div class="cmd-card"><div class="cmd-name">!도배중지</div><div class="cmd-desc">현재 채널 도배 중지</div></div>
+      <div class="cmd-card"><div class="cmd-name">!근성</div><div class="cmd-desc">근성 도배 시작</div></div>
+      <div class="cmd-card"><div class="cmd-name">!근성중지</div><div class="cmd-desc">근성 도배 중지</div></div>
+    </div>
+    <h2>멘션 / DM</h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!멘션 &lt;ID&gt;</div><div class="cmd-desc">유저 멘션</div></div>
+      <div class="cmd-card"><div class="cmd-name">!가짜멘션 &lt;ID&gt;</div><div class="cmd-desc">멘션 후 메시지 삭제</div></div>
+      <div class="cmd-card"><div class="cmd-name">!디엠테러 &lt;ID&gt;</div><div class="cmd-desc">DM 반복 전송</div></div>
+      <div class="cmd-card"><div class="cmd-name">!디엠중지</div><div class="cmd-desc">DM 테러 중지</div></div>
+      <div class="cmd-card"><div class="cmd-name">!귓속말 &lt;ID&gt; &lt;내용&gt;</div><div class="cmd-desc">대상에게 DM 전송</div></div>
+      <div class="cmd-card"><div class="cmd-name">!멘션확인</div><div class="cmd-desc">멘션/DM 로그 확인</div></div>
+      <div class="cmd-card"><div class="cmd-name">!로그청소</div><div class="cmd-desc">로그 전체 삭제</div></div>
+    </div>
+    <h2>멘헤라 모드</h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!멘헤라모드</div><div class="cmd-desc">내 메시지를 멘헤라 말투로 자동 변환</div></div>
+      <div class="cmd-card"><div class="cmd-name">!멘헤라중지</div><div class="cmd-desc">멘헤라 모드 종료</div></div>
+      <div class="cmd-card"><div class="cmd-name">!멘헤라모드2</div><div class="cmd-desc">멘션/답장에 멘헤라 자동응답</div></div>
+      <div class="cmd-card"><div class="cmd-name">!멘헤라중지2</div><div class="cmd-desc">멘헤라모드2 종료</div></div>
+    </div>
+    <h2>채널 / 역할 관리</h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!채널삭제 <span class="badge badge-owner">소유자</span></div><div class="cmd-desc">서버 전체 채널 삭제</div></div>
+      <div class="cmd-card"><div class="cmd-name">!채널생성 <span class="badge badge-owner">소유자</span></div><div class="cmd-desc">채널 생성</div></div>
+      <div class="cmd-card"><div class="cmd-name">!역할삭제 <span class="badge badge-owner">소유자</span></div><div class="cmd-desc">서버 전체 역할 삭제</div></div>
+      <div class="cmd-card"><div class="cmd-name">!역할생성 <span class="badge badge-owner">소유자</span></div><div class="cmd-desc">역할 생성</div></div>
+      <div class="cmd-card"><div class="cmd-name">!청소 &lt;n&gt;</div><div class="cmd-desc">내 메시지 n개 삭제</div></div>
+    </div>
+    <h2>기타</h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!와도</div><div class="cmd-desc">와도 이미지 전송</div></div>
+      <div class="cmd-card"><div class="cmd-name">!RPC &lt;텍스트&gt;</div><div class="cmd-desc">Rich Presence 설정</div></div>
+      <div class="cmd-card"><div class="cmd-name">!RPC중지</div><div class="cmd-desc">Rich Presence 해제</div></div>
+      <div class="cmd-card"><div class="cmd-name">!이모지 &lt;이모지&gt;</div><div class="cmd-desc">내 메시지에 자동 이모지 반응</div></div>
+      <div class="cmd-card"><div class="cmd-name">!이모지중지</div><div class="cmd-desc">자동 이모지 해제</div></div>
+      <div class="cmd-card"><div class="cmd-name">!자동응답 &lt;문구&gt;</div><div class="cmd-desc">멘션/답장 자동응답 설정</div></div>
+      <div class="cmd-card"><div class="cmd-name">!자동응답중지</div><div class="cmd-desc">자동응답 해제</div></div>
+      <div class="cmd-card"><div class="cmd-name">!출첵</div><div class="cmd-desc">출석체크 이벤트 시작</div></div>
+      <div class="cmd-card"><div class="cmd-name">!투표 &lt;내용&gt;</div><div class="cmd-desc">투표 생성</div></div>
+      <div class="cmd-card"><div class="cmd-name">!서버복제</div><div class="cmd-desc">서버 구조 복제</div></div>
+    </div>
+  </div>
+
+  <!-- GPT -->
+  <div id="gpt" class="section">
+    <h1>GPT 기능</h1>
+    <p class="subtitle">Groq API 기반 · 대화 기록 유지 · 봇 재시작 후에도 기억</p>
+    <h2>기본 사용</h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!gpt &lt;질문&gt;</div><div class="cmd-desc">AI에게 질문. 대화 맥락을 기억함</div></div>
+      <div class="cmd-card"><div class="cmd-name">!gpt초기화</div><div class="cmd-desc">나와의 대화 기록 초기화</div></div>
+    </div>
+    <h2>승인 관리 <span class="badge badge-owner">소유자</span></h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!gpt승인 &lt;@유저&gt;</div><div class="cmd-desc">GPT 사용 권한 부여</div></div>
+      <div class="cmd-card"><div class="cmd-name">!gpt승인해제 &lt;@유저&gt;</div><div class="cmd-desc">GPT 사용 권한 회수</div></div>
+    </div>
+    <h2>학습 <span class="badge badge-owner">소유자</span></h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!가르치기 &lt;키워드&gt; = &lt;설명&gt;</div><div class="cmd-desc">같은 키워드에 여러 값 등록 시 랜덤으로 사용</div></div>
+    </div>
+    <h2>API 키 <span class="badge badge-owner">소유자</span></h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!gpt키 &lt;API_KEY&gt;</div><div class="cmd-desc">Groq API 키 등록</div></div>
+      <div class="cmd-card"><div class="cmd-name">!gpt키삭제</div><div class="cmd-desc">등록된 API 키 삭제</div></div>
+    </div>
+    <h2>사용 한도</h2>
+    <p>Groq 무료 티어 · 매일 <strong>한국 시간 오전 9시(UTC 0시)</strong> 초기화</p>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">분당 요청</div><div class="cmd-desc">30회</div></div>
+      <div class="cmd-card"><div class="cmd-name">하루 요청</div><div class="cmd-desc">14,400회</div></div>
+    </div>
+  </div>
+
+  <!-- 낚시 -->
+  <div id="fishing" class="section">
+    <h1>낚시 시스템</h1>
+    <p class="subtitle">코인을 모아 낚싯대와 유물을 구매하세요</p>
+    <h2>기본 명령어</h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!낚시</div><div class="cmd-desc">낚시 시작 (허용된 유저만)</div></div>
+      <div class="cmd-card"><div class="cmd-name">!낚시잔액</div><div class="cmd-desc">보유 코인 확인</div></div>
+      <div class="cmd-card"><div class="cmd-name">!인벤토리</div><div class="cmd-desc">보유 낚싯대·유물 확인</div></div>
+      <div class="cmd-card"><div class="cmd-name">!낚시기능정리</div><div class="cmd-desc">낚시 시스템 안내</div></div>
+    </div>
+    <h2>상점</h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!상점</div><div class="cmd-desc">낚싯대 · 유물 목록</div></div>
+      <div class="cmd-card"><div class="cmd-name">!낚싯대구매 &lt;ID&gt;</div><div class="cmd-desc">낚싯대 구매 (코인 배율 증가)</div></div>
+      <div class="cmd-card"><div class="cmd-name">!유물구매 &lt;ID&gt;</div><div class="cmd-desc">유물 구매 (속도·희귀도 향상)</div></div>
+    </div>
+    <h2>관리 <span class="badge badge-owner">소유자</span></h2>
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-name">!낚시허용 &lt;@유저&gt;</div><div class="cmd-desc">낚시 권한 부여</div></div>
+      <div class="cmd-card"><div class="cmd-name">!낚시허용취소 &lt;@유저&gt;</div><div class="cmd-desc">낚시 권한 회수</div></div>
+      <div class="cmd-card"><div class="cmd-name">!코인지급 &lt;@유저&gt; &lt;양&gt;</div><div class="cmd-desc">코인 지급</div></div>
+      <div class="cmd-card"><div class="cmd-name">!코인차감 &lt;@유저&gt; &lt;양&gt;</div><div class="cmd-desc">코인 차감</div></div>
+      <div class="cmd-card"><div class="cmd-name">!코인설정 &lt;@유저&gt; &lt;양&gt;</div><div class="cmd-desc">코인 직접 설정</div></div>
+      <div class="cmd-card"><div class="cmd-name">!대리구매 &lt;@유저&gt; &lt;아이템&gt;</div><div class="cmd-desc">유저 대신 아이템 구매</div></div>
+    </div>
+  </div>
+
+  <!-- 이용약관 -->
+  <div id="tos" class="section">
+    <h1>이용약관</h1>
+    <p class="subtitle">코캣 셀프봇 서비스 이용 시 아래 약관에 동의한 것으로 간주합니다.</p>
+    <div class="tos-box">
+      <h2 style="margin-top:0">제1조 (목적)</h2>
+      <p>본 약관은 코캣 셀프봇(이하 "서비스")의 이용 조건 및 절차, 이용자와 제공자의 권리·의무를 규정함을 목적으로 합니다.</p>
+
+      <h2>제2조 (서비스 성격)</h2>
+      <p>코캣 셀프봇은 Discord의 공식 봇 API가 아닌 <span class="warn">셀프봇(Self-bot)</span> 방식으로 동작합니다. Discord 서비스 이용약관(ToS)에 따라 셀프봇 사용은 계정 정지 등의 제재를 받을 수 있으며, 이에 대한 책임은 이용자 본인에게 있습니다.</p>
+
+      <h2>제3조 (이용자의 의무)</h2>
+      <ol>
+        <li>이용자는 본 서비스를 타인을 비방, 괴롭히거나 불법적인 목적으로 사용해서는 안 됩니다.</li>
+        <li>서비스를 통해 얻은 정보를 무단으로 배포하거나 상업적으로 이용해서는 안 됩니다.</li>
+        <li>서비스의 소스코드를 무단으로 복제, 배포, 판매하는 행위를 금지합니다.</li>
+        <li>GPT 기능을 사기, 사칭, 허위 정보 유포 등 악의적인 목적으로 사용하는 것을 금지합니다.</li>
+        <li>낚시 시스템의 코인·아이템 데이터를 외부 도구로 조작하는 행위를 금지합니다.</li>
+      </ol>
+
+      <h2>제4조 (책임 제한)</h2>
+      <ol>
+        <li>서비스 제공자는 셀프봇 사용으로 인한 Discord 계정 제재에 대해 책임지지 않습니다.</li>
+        <li>GPT 기능은 Groq API를 통해 제공되며, AI 응답의 정확성을 보장하지 않습니다.</li>
+        <li>서비스 중단, 데이터 손실 등 예기치 못한 상황에 대해 제공자는 책임을 지지 않습니다.</li>
+      </ol>
+
+      <h2>제5조 (약관 변경)</h2>
+      <p>본 약관은 사전 고지 없이 변경될 수 있으며, 변경 후 즉시 효력이 발생합니다.</p>
+      
+      <h2>제6조 (개인정보 보호)</h2>
+      <ol>
+        <li>서비스는 기능 제공을 위해 Discord 사용자 ID, 닉네임, 채널 ID 등 최소한의 정보를 수집합니다.</li>
+        <li>수집된 정보는 봇 기능(낚시, GPT 승인, 로그 등) 외의 목적으로 사용하지 않습니다.</li>
+        <li>수집된 정보는 제3자에게 제공하거나 판매하지 않습니다.</li>
+        <li>이용자는 언제든지 자신의 데이터 삭제를 봇 소유자에게 요청할 수 있습니다.</li>
+        <li>GPT 기능 사용 시 입력한 대화 내용은 Groq API 서버로 전송되며, Groq의 개인정보 처리방침이 적용됩니다.</li>
+      </ol>
+
+      <h2>제7조 (법적 대응)</h2>
+      <ol>
+        <li>이용자가 본 약관을 위반하거나 서비스를 악의적으로 이용할 경우, 서비스 제공자는 법적 조치를 취할 수 있습니다.</li>
+        <li>타인을 대상으로 한 사이버 괴롭힘, 명예훼손, 개인정보 침해 등의 행위에 본 서비스를 이용한 경우 민·형사상 책임을 질 수 있습니다.</li>
+        <li>서비스 제공자의 소스코드, 데이터, 콘텐츠를 무단으로 도용·배포한 경우 저작권법에 따라 법적 대응할 수 있습니다.</li>
+        <li>본 조항과 관련된 분쟁은 대한민국 법령을 기준으로 하며, 관할 법원은 서비스 제공자의 주소지 법원으로 합니다.</li>
+      </ol>
+
+      <h2>제8조 (서비스 이용 제한)</h2>
+      <ol>
+        <li>서비스 제공자는 이용자가 본 약관을 위반한 경우 사전 통보 없이 서비스 이용을 제한하거나 차단할 수 있습니다.</li>
+        <li>다음 각 호에 해당하는 경우 즉시 이용이 제한됩니다.
+          <ul style="margin-top:6px;padding-left:18px;">
+            <li>타인의 계정 또는 토큰을 도용하여 서비스를 이용하는 경우</li>
+            <li>서비스를 이용해 스팸, 피싱, 사기 행위를 하는 경우</li>
+            <li>서비스의 정상적인 운영을 방해하는 행위를 하는 경우</li>
+            <li>미성년자를 대상으로 부적절한 콘텐츠를 유포하는 경우</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h2>제9조 (지식재산권)</h2>
+      <ol>
+        <li>코캣 셀프봇의 소스코드, 디자인, 기능 구성 등 모든 지식재산권은 서비스 제공자에게 귀속됩니다.</li>
+        <li>이용자는 서비스 제공자의 사전 서면 동의 없이 서비스를 복제, 수정, 배포, 판매하거나 2차 저작물을 제작할 수 없습니다.</li>
+        <li>이용자가 서비스에 제공한 콘텐츠(GPT 학습 데이터, 커스텀 명령어 등)에 대한 권리는 이용자에게 있으나, 서비스 운영 목적에 한해 사용될 수 있습니다.</li>
+      </ol>
+
+      <h2>제10조 (면책 조항)</h2>
+      <ol>
+        <li>서비스는 "있는 그대로(AS-IS)" 제공되며, 특정 목적에의 적합성을 보증하지 않습니다.</li>
+        <li>GPT 기능을 통해 생성된 정보의 정확성, 완전성, 신뢰성에 대해 서비스 제공자는 책임을 지지 않습니다.</li>
+        <li>천재지변, 서버 장애, 외부 API(Discord, Groq 등) 서비스 중단 등 불가항력적 사유로 인한 서비스 장애에 대해 책임을 지지 않습니다.</li>
+        <li>이용자 간의 분쟁에 서비스 제공자는 개입할 의무가 없으며, 이로 인한 손해에 대해 책임을 지지 않습니다.</li>
+      </ol>
+
+      <h2>제11조 (서비스 변경 및 종료)</h2>
+      <ol>
+        <li>서비스 제공자는 운영상, 기술상의 필요에 따라 서비스 내용을 변경하거나 종료할 수 있습니다.</li>
+        <li>서비스 종료 시 가능한 범위 내에서 사전 공지하며, 이용자의 데이터는 종료 후 지체 없이 파기합니다.</li>
+        <li>서비스 변경·종료로 인한 이용자의 손해에 대해 서비스 제공자는 책임을 지지 않습니다.</li>
+      </ol>
+
+      <h2>제12조 (준거법 및 관할)</h2>
+      <ol>
+        <li>본 약관은 대한민국 법령에 따라 해석 및 적용됩니다.</li>
+        <li>서비스 이용과 관련하여 분쟁이 발생한 경우 서비스 제공자와 이용자는 상호 협의를 통해 해결하도록 노력합니다.</li>
+        <li>협의로 해결되지 않는 경우 서비스 제공자의 주소지를 관할하는 법원을 제1심 관할 법원으로 합니다.</li>
+      </ol>
+
+      <p class="tos-updated">최종 업데이트: 2026년 8월 24일</p>
+    </div>
+  </div>
+  <!-- 디스코드 -->
+  <div id="discord" class="section">
+    <h1>디스코드</h1>
+    <p class="subtitle">코캣 셀프봇 공식 디스코드 서버</p>
+
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:36px;max-width:480px;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+        <div style="width:56px;height:56px;background:#5865f2;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">💬</div>
+        <div>
+          <div style="font-size:20px;font-weight:800;color:#fff;">코캣 셀프봇</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px;">공식 커뮤니티 서버</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#c8c8da;">
+          <span style="color:var(--accent2);">🔗</span>
+          <span>초대 링크</span>
+          <a href="https://discord.gg/XykVzm6Zp" target="_blank"
+            style="color:#5865f2;text-decoration:none;font-family:monospace;font-size:13px;background:#0e0e14;padding:3px 8px;border-radius:6px;border:1px solid var(--border);">
+            discord.gg/XykVzm6Zp
+          </a>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#c8c8da;">
+          <span style="color:var(--accent2);">📋</span>
+          <span>공지, 업데이트, 버그 제보, 기능 건의 채널 운영 중</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#c8c8da;">
+          <span style="color:var(--accent2);">🛠️</span>
+          <span>셀프봇 관련 질문 및 지원</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#c8c8da;">
+          <span style="color:var(--accent2);">🔒</span>
+          <span>서버 이용 시 Discord 이용약관 준수 필요</span>
+        </div>
+      </div>
+
+      <a href="https://discord.gg/XykVzm6Zp" target="_blank"
+        style="display:block;text-align:center;background:#5865f2;color:#fff;text-decoration:none;padding:12px;border-radius:10px;font-weight:700;font-size:15px;transition:opacity 0.15s;"
+        onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+        서버 참가하기
+      </a>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  function show(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    el.classList.add('active');
+  }
+  // 이용약관 해시로 직접 이동
+  if (location.hash === '#tos') {
+    const link = document.querySelector(".nav a[onclick*=\"'tos'\"]");
+    if (link) show('tos', link);
+  }
+</script>
+</body>
+</html>
